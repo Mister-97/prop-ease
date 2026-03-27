@@ -55,27 +55,27 @@ export default function ExpensesPage() {
   const monthTotal = expenses.filter(e => e.date?.startsWith(new Date().toISOString().slice(0, 7))).reduce((s, e) => s + Number(e.amount), 0)
 
   return (
-    <div className="p-8">
+    <div className="p-4 lg:p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Expenses</h1>
           <p className="text-gray-500 mt-1">Track all property expenses</p>
         </div>
-        <div className="flex gap-3">
-          <button onClick={() => setShowImport(true)} className="flex items-center gap-2 border border-gray-200 text-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-            <Upload size={15} /> Import CSV
+        <div className="flex gap-2 lg:gap-3">
+          <button onClick={() => setShowImport(true)} className="flex items-center gap-1.5 border border-gray-200 text-gray-600 px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+            <Upload size={15} /> <span className="hidden sm:inline">Import</span>
           </button>
-          <button onClick={exportCSV} className="flex items-center gap-2 border border-gray-200 text-gray-600 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-            <Download size={15} /> Export CSV
+          <button onClick={exportCSV} className="flex items-center gap-1.5 border border-gray-200 text-gray-600 px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+            <Download size={15} /> <span className="hidden sm:inline">Export</span>
           </button>
-          <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
-            <Plus size={15} /> Add Expense
+          <button onClick={() => setShowAdd(true)} className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg text-sm font-medium transition-colors">
+            <Plus size={15} /> <span className="hidden sm:inline">Add Expense</span><span className="sm:hidden">Add</span>
           </button>
         </div>
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-3 lg:gap-4 mb-6">
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-sm text-gray-500">Total All Time</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">${total.toLocaleString()}</p>
@@ -90,8 +90,29 @@ export default function ExpensesPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {/* Mobile cards */}
+      <div className="lg:hidden space-y-3">
+        {loading ? (
+          [...Array(3)].map((_, i) => <div key={i} className="bg-white rounded-xl border border-gray-200 h-20 animate-pulse" />)
+        ) : expenses.length === 0 ? (
+          <div className="text-center py-12 text-gray-400 text-sm">No expenses yet</div>
+        ) : expenses.map((e: any) => (
+          <div key={e.id} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-start justify-between mb-1">
+              <p className="text-sm font-medium text-gray-900">{e.description}</p>
+              <p className="text-sm font-semibold text-gray-900 ml-2 shrink-0">${Number(e.amount).toLocaleString()}</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full capitalize">{e.category}</span>
+              <span className="text-xs text-gray-400">{e.properties?.name}</span>
+              <span className="text-xs text-gray-400">{format(new Date(e.date), 'MMM d, yyyy')}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden lg:block bg-white rounded-xl border border-gray-200 overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">

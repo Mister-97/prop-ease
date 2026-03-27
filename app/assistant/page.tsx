@@ -129,7 +129,7 @@ export default function AssistantPage() {
 
       {/* Messages */}
       {!empty && (
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 lg:py-6">
           <div className="max-w-2xl mx-auto space-y-6">
             {messages.map((m, i) => (
               <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -176,7 +176,7 @@ export default function AssistantPage() {
       )}
 
       {/* Input bar */}
-      <div className="px-6 pb-6 pt-2">
+      <div className="px-4 lg:px-6 pb-4 lg:pb-6 pt-2">
         <div className="max-w-2xl mx-auto">
           {/* Attached file preview */}
           {file && (

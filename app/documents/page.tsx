@@ -90,24 +90,24 @@ export default function DocumentsPage() {
   const filteredTenants = form.property_id ? tenants.filter(t => t.property_id === form.property_id) : tenants
 
   return (
-    <div className="p-8" onDragOver={e => e.preventDefault()} onDrop={handleDrop}>
+    <div className="p-4 lg:p-8" onDragOver={e => e.preventDefault()} onDrop={handleDrop}>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
           <p className="text-gray-500 mt-1">{docs.length} files stored</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 lg:gap-3">
           <select
             value={filterProp}
             onChange={e => setFilterProp(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
+            className="border border-gray-200 rounded-lg px-2 lg:px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-gray-600 max-w-[120px] lg:max-w-none"
           >
             <option value="">All properties</option>
             {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <button
             onClick={() => setShowUpload(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg text-sm font-medium transition-colors"
           >
             <Upload size={15} /> Upload
           </button>
@@ -130,42 +130,69 @@ export default function DocumentsPage() {
           <p className="text-sm mt-1">Upload leases, receipts, inspection reports, photos</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                {['File', 'Property', 'Tenant', 'Category', 'Size', 'Date', ''].map(h => (
-                  <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(doc => (
-                <tr key={doc.id} className="border-b border-gray-50 hover:bg-gray-50 group">
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      {fileIcon(doc.file_type)}
-                      <span className="text-sm font-medium text-gray-900 max-w-[180px] truncate">{doc.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3 text-sm text-gray-500">{doc.properties?.name ?? '—'}</td>
-                  <td className="px-5 py-3 text-sm text-gray-500">{doc.tenants?.name ?? '—'}</td>
-                  <td className="px-5 py-3">
-                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full capitalize">{doc.category}</span>
-                  </td>
-                  <td className="px-5 py-3 text-sm text-gray-400">{doc.file_size ? formatSize(doc.file_size) : '—'}</td>
-                  <td className="px-5 py-3 text-sm text-gray-400">{format(new Date(doc.created_at), 'MMM d, yyyy')}</td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => download(doc)} className="text-gray-400 hover:text-blue-600"><Download size={15} /></button>
-                      <button onClick={() => deleteDoc(doc)} className="text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
-                    </div>
-                  </td>
+        <>
+          {/* Mobile cards */}
+          <div className="lg:hidden space-y-3">
+            {filtered.map(doc => (
+              <div key={doc.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {fileIcon(doc.file_type)}
+                    <span className="text-sm font-medium text-gray-900 truncate">{doc.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => download(doc)} className="text-gray-400 hover:text-blue-600"><Download size={15} /></button>
+                    <button onClick={() => deleteDoc(doc)} className="text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap mt-2">
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full capitalize">{doc.category}</span>
+                  {doc.properties?.name && <span className="text-xs text-gray-400">{doc.properties.name}</span>}
+                  {doc.file_size && <span className="text-xs text-gray-400">{formatSize(doc.file_size)}</span>}
+                  <span className="text-xs text-gray-400">{format(new Date(doc.created_at), 'MMM d, yyyy')}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden lg:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  {['File', 'Property', 'Tenant', 'Category', 'Size', 'Date', ''].map(h => (
+                    <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filtered.map(doc => (
+                  <tr key={doc.id} className="border-b border-gray-50 hover:bg-gray-50 group">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2">
+                        {fileIcon(doc.file_type)}
+                        <span className="text-sm font-medium text-gray-900 max-w-[180px] truncate">{doc.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-sm text-gray-500">{doc.properties?.name ?? '—'}</td>
+                    <td className="px-5 py-3 text-sm text-gray-500">{doc.tenants?.name ?? '—'}</td>
+                    <td className="px-5 py-3">
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full capitalize">{doc.category}</span>
+                    </td>
+                    <td className="px-5 py-3 text-sm text-gray-400">{doc.file_size ? formatSize(doc.file_size) : '—'}</td>
+                    <td className="px-5 py-3 text-sm text-gray-400">{format(new Date(doc.created_at), 'MMM d, yyyy')}</td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => download(doc)} className="text-gray-400 hover:text-blue-600"><Download size={15} /></button>
+                        <button onClick={() => deleteDoc(doc)} className="text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* Upload modal */}

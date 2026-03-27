@@ -62,29 +62,29 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 lg:p-8">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6 lg:mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-500 mt-1">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-5 mb-6 lg:mb-8">
         {statCards.map(({ label, value, icon: Icon, color, href }) => (
-          <Link key={label} href={href} className={`rounded-xl border p-5 flex items-center gap-4 hover:shadow-sm transition-shadow ${colorMap[color]}`}>
+          <Link key={label} href={href} className={`rounded-xl border p-4 lg:p-5 flex items-center gap-3 lg:gap-4 hover:shadow-sm transition-shadow ${colorMap[color]}`}>
             <div className={`shrink-0 ${iconColorMap[color]}`}>
-              <Icon size={28} />
+              <Icon size={24} className="lg:w-7 lg:h-7" />
             </div>
-            <div>
-              <p className="text-sm font-medium opacity-70">{label}</p>
-              <p className="text-2xl font-bold mt-0.5">{loading ? '—' : value}</p>
+            <div className="min-w-0">
+              <p className="text-xs lg:text-sm font-medium opacity-70 truncate">{label}</p>
+              <p className="text-xl lg:text-2xl font-bold mt-0.5">{loading ? '—' : value}</p>
             </div>
           </Link>
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         {/* Expiring Leases */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center gap-2 mb-4">

@@ -44,7 +44,7 @@ export default function TenantsPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 lg:p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Tenants</h1>
@@ -67,70 +67,122 @@ export default function TenantsPage() {
           <p>No tenants yet — add them through a property's unit page</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                {['Tenant', 'Property / Unit', 'Contact', 'Lease Period', 'Status', ''].map(h => (
-                  <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {tenants.map((t: any) => {
-                const daysLeft = t.lease_end ? differenceInDays(new Date(t.lease_end), new Date()) : null
-                return (
-                  <tr key={t.id} className="border-b border-gray-50 hover:bg-gray-50 group">
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-semibold text-sm">
-                          {t.name.charAt(0).toUpperCase()}
+        <>
+          {/* Mobile cards */}
+          <div className="lg:hidden space-y-3">
+            {tenants.map((t: any) => {
+              const daysLeft = t.lease_end ? differenceInDays(new Date(t.lease_end), new Date()) : null
+              return (
+                <div key={t.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-semibold text-sm shrink-0">
+                        {t.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-sm font-medium text-gray-900">{t.name}</span>
+                    </div>
+                    {daysLeft !== null ? (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        daysLeft < 0 ? 'bg-red-100 text-red-700' :
+                        daysLeft <= 30 ? 'bg-orange-100 text-orange-700' :
+                        'bg-green-100 text-green-700'
+                      }`}>
+                        {daysLeft < 0 ? 'Expired' : daysLeft <= 30 ? `${daysLeft}d left` : 'Active'}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-xs text-gray-500 mb-1">{t.units?.properties?.name} · Unit {t.units?.unit_number}</p>
+                  {t.lease_start && t.lease_end && (
+                    <p className="text-xs text-gray-400 mb-2">
+                      <Calendar size={10} className="inline mr-1" />
+                      {format(new Date(t.lease_start), 'MMM d, yy')} – {format(new Date(t.lease_end), 'MMM d, yy')}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      {t.email && <div className="flex items-center gap-1.5 text-xs text-gray-400"><Mail size={10} />{t.email}</div>}
+                      {t.phone && <div className="flex items-center gap-1.5 text-xs text-gray-400"><Phone size={10} />{t.phone}</div>}
+                    </div>
+                    {t.email && (
+                      <button
+                        onClick={() => { setComposeTo(t); setEmailForm({ subject: '', body: '' }) }}
+                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700"
+                      >
+                        <Mail size={12} /> Email
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden lg:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  {['Tenant', 'Property / Unit', 'Contact', 'Lease Period', 'Status', ''].map(h => (
+                    <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {tenants.map((t: any) => {
+                  const daysLeft = t.lease_end ? differenceInDays(new Date(t.lease_end), new Date()) : null
+                  return (
+                    <tr key={t.id} className="border-b border-gray-50 hover:bg-gray-50 group">
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-semibold text-sm">
+                            {t.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm font-medium text-gray-900">{t.name}</span>
                         </div>
-                        <span className="text-sm font-medium text-gray-900">{t.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-gray-600">
-                      {t.units?.properties?.name}
-                      <span className="text-gray-400"> · Unit {t.units?.unit_number}</span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="space-y-0.5">
-                        {t.email && <div className="flex items-center gap-1.5 text-xs text-gray-500"><Mail size={11} />{t.email}</div>}
-                        {t.phone && <div className="flex items-center gap-1.5 text-xs text-gray-500"><Phone size={11} />{t.phone}</div>}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-gray-600">
-                      {t.lease_start && t.lease_end ? (
-                        <span>{format(new Date(t.lease_start), 'MMM d, yy')} – {format(new Date(t.lease_end), 'MMM d, yy')}</span>
-                      ) : '—'}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {daysLeft !== null ? (
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          daysLeft < 0 ? 'bg-red-100 text-red-700' :
-                          daysLeft <= 30 ? 'bg-orange-100 text-orange-700' :
-                          'bg-green-100 text-green-700'
-                        }`}>
-                          {daysLeft < 0 ? 'Expired' : daysLeft <= 30 ? `${daysLeft}d left` : 'Active'}
-                        </span>
-                      ) : <span className="text-xs text-gray-400">No end date</span>}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {t.email && (
-                        <button
-                          onClick={() => { setComposeTo(t); setEmailForm({ subject: '', body: '' }) }}
-                          className="opacity-0 group-hover:opacity-100 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 transition-all"
-                        >
-                          <Mail size={13} /> Email
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-gray-600">
+                        {t.units?.properties?.name}
+                        <span className="text-gray-400"> · Unit {t.units?.unit_number}</span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="space-y-0.5">
+                          {t.email && <div className="flex items-center gap-1.5 text-xs text-gray-500"><Mail size={11} />{t.email}</div>}
+                          {t.phone && <div className="flex items-center gap-1.5 text-xs text-gray-500"><Phone size={11} />{t.phone}</div>}
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-gray-600">
+                        {t.lease_start && t.lease_end ? (
+                          <span>{format(new Date(t.lease_start), 'MMM d, yy')} – {format(new Date(t.lease_end), 'MMM d, yy')}</span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {daysLeft !== null ? (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            daysLeft < 0 ? 'bg-red-100 text-red-700' :
+                            daysLeft <= 30 ? 'bg-orange-100 text-orange-700' :
+                            'bg-green-100 text-green-700'
+                          }`}>
+                            {daysLeft < 0 ? 'Expired' : daysLeft <= 30 ? `${daysLeft}d left` : 'Active'}
+                          </span>
+                        ) : <span className="text-xs text-gray-400">No end date</span>}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {t.email && (
+                          <button
+                            onClick={() => { setComposeTo(t); setEmailForm({ subject: '', body: '' }) }}
+                            className="opacity-0 group-hover:opacity-100 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 transition-all"
+                          >
+                            <Mail size={13} /> Email
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* Compose modal */}

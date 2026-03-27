@@ -22,8 +22,8 @@ export default function PropertiesPage() {
   useEffect(() => { load() }, [])
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 lg:p-8">
+      <div className="flex items-center justify-between mb-6 lg:mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Properties</h1>
           <p className="text-gray-500 mt-1">{properties.length} properties</p>
@@ -37,7 +37,7 @@ export default function PropertiesPage() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="bg-white rounded-xl border border-gray-200 h-48 animate-pulse" />
           ))}
@@ -49,7 +49,7 @@ export default function PropertiesPage() {
           <p className="text-sm mt-1">Click "Add Property" to get started</p>
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
           {properties.map((p: any) => {
             const total = p.units?.length ?? 0
             const occupied = p.units?.filter((u: any) => u.is_occupied).length ?? 0
