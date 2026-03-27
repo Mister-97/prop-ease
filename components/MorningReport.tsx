@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Sun, X, AlertTriangle, Wrench, DollarSign, Calendar } from 'lucide-react'
+import { Sun, X, AlertTriangle, Wrench, DollarSign, Calendar, CheckCircle } from 'lucide-react'
 import { differenceInDays, format } from 'date-fns'
 
 export default function MorningReport() {
