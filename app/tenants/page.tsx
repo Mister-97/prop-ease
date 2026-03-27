@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Users, Phone, Mail, Calendar, Upload, Send, X } from 'lucide-react'
+import { Users, Phone, Mail, Calendar, Upload, Send, X, Trash2 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import CsvImportModal from '@/components/CsvImportModal'
 
@@ -15,6 +15,13 @@ export default function TenantsPage() {
   const [emailForm, setEmailForm] = useState({ subject: '', body: '' })
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+
+  async function deleteTenant(t: any) {
+    if (!confirm(`Remove ${t.name}?`)) return
+    await supabase.from('tenants').delete().eq('id', t.id)
+    if (t.unit_id) await supabase.from('units').update({ is_occupied: false }).eq('id', t.unit_id)
+    load()
+  }
 
   async function load() {
     const [t, p, u] = await Promise.all([
@@ -103,14 +110,19 @@ export default function TenantsPage() {
                       {t.email && <div className="flex items-center gap-1.5 text-xs text-gray-400"><Mail size={10} />{t.email}</div>}
                       {t.phone && <div className="flex items-center gap-1.5 text-xs text-gray-400"><Phone size={10} />{t.phone}</div>}
                     </div>
-                    {t.email && (
-                      <button
-                        onClick={() => { setComposeTo(t); setEmailForm({ subject: '', body: '' }) }}
-                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700"
-                      >
-                        <Mail size={12} /> Email
+                    <div className="flex items-center gap-2">
+                      {t.email && (
+                        <button
+                          onClick={() => { setComposeTo(t); setEmailForm({ subject: '', body: '' }) }}
+                          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700"
+                        >
+                          <Mail size={12} /> Email
+                        </button>
+                      )}
+                      <button onClick={() => deleteTenant(t)} className="text-gray-300 hover:text-red-500">
+                        <Trash2 size={13} />
                       </button>
-                    )}
+                    </div>
                   </div>
                 </div>
               )
@@ -167,14 +179,19 @@ export default function TenantsPage() {
                         ) : <span className="text-xs text-gray-400">No end date</span>}
                       </td>
                       <td className="px-5 py-3.5">
-                        {t.email && (
-                          <button
-                            onClick={() => { setComposeTo(t); setEmailForm({ subject: '', body: '' }) }}
-                            className="opacity-0 group-hover:opacity-100 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 transition-all"
-                          >
-                            <Mail size={13} /> Email
+                        <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-all">
+                          {t.email && (
+                            <button
+                              onClick={() => { setComposeTo(t); setEmailForm({ subject: '', body: '' }) }}
+                              className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700"
+                            >
+                              <Mail size={13} /> Email
+                            </button>
+                          )}
+                          <button onClick={() => deleteTenant(t)} className="text-gray-300 hover:text-red-500">
+                            <Trash2 size={14} />
                           </button>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   )

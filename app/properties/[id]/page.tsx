@@ -1,8 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Building2, MapPin, Home, Plus, ChevronLeft, Users, Wrench, DollarSign, X, CheckCircle, Circle } from 'lucide-react'
+import { Building2, MapPin, Home, Plus, ChevronLeft, Users, Wrench, DollarSign, X, CheckCircle, Circle, Trash2 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { format, differenceInDays } from 'date-fns'
 import { useParams } from 'next/navigation'
 
@@ -51,6 +52,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 export default function PropertyDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const router = useRouter()
   const [property, setProperty] = useState<any>(null)
   const [units, setUnits] = useState<Unit[]>([])
   const [maintenance, setMaintenance] = useState<MaintenanceRequest[]>([])
@@ -67,6 +69,19 @@ export default function PropertyDetailPage() {
   const [tenantForm, setTenantForm] = useState({ name: '', email: '', phone: '', lease_start: '', lease_end: '' })
   const [mForm, setMForm] = useState({ title: '', description: '', priority: 'medium', unit_id: '' })
   const [saving, setSaving] = useState(false)
+
+  async function deleteProperty() {
+    if (!confirm(`Delete "${property?.name}"? This will also delete all units, tenants, and maintenance records.`)) return
+    await supabase.from('maintenance_requests').delete().eq('property_id', id)
+    await supabase.from('expenses').delete().eq('property_id', id)
+    const unitIds = units.map(u => u.id)
+    if (unitIds.length > 0) {
+      await supabase.from('tenants').delete().in('unit_id', unitIds)
+      await supabase.from('units').delete().eq('property_id', id)
+    }
+    await supabase.from('properties').delete().eq('id', id)
+    router.push('/properties')
+  }
 
   async function load() {
     const [propRes, unitsRes, maintRes] = await Promise.all([
@@ -182,6 +197,12 @@ export default function PropertyDetailPage() {
               </div>
             </div>
           </div>
+          <button
+            onClick={deleteProperty}
+            className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <Trash2 size={14} /> Delete
+          </button>
         </div>
       </div>
 
