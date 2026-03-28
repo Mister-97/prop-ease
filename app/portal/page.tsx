@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import { getPortalTenant } from '@/lib/portal'
 import PortalShell from '@/components/PortalShell'
 import { format, differenceInDays } from 'date-fns'
@@ -20,22 +19,8 @@ export default function PortalHome() {
       const t = await getPortalTenant()
       if (!t) { router.replace('/portal/login'); return }
       setTenant(t)
-
-      const monthStr = new Date().toISOString().slice(0, 7)
-      const [rent, maint] = await Promise.all([
-        supabase.from('rent_payments')
-          .select('*')
-          .eq('tenant_id', t.id)
-          .gte('due_date', `${monthStr}-01`)
-          .lte('due_date', `${monthStr}-31`)
-          .single(),
-        supabase.from('maintenance_requests')
-          .select('id', { count: 'exact' })
-          .eq('unit_id', t.unit_id)
-          .neq('status', 'completed'),
-      ])
-      setRentStatus(rent.data)
-      setOpenRequests(maint.count ?? 0)
+      setRentStatus(t._rentStatus ?? null)
+      setOpenRequests(t._openRequests ?? 0)
       setLoading(false)
     }
     load()

@@ -1,6 +1,10 @@
 import { supabase } from './supabase'
 
 export async function getPortalTenant() {
+  // getUser() makes a server call — more reliable than getSession() right after redirect
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return null
 

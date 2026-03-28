@@ -24,5 +24,25 @@ export async function GET(req: NextRequest) {
     .single()
 
   if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
-  return NextResponse.json(tenant)
+
+  // Fetch rent status and open maintenance count alongside tenant
+  const monthStr = new Date().toISOString().slice(0, 7)
+  const [rentRes, maintRes] = await Promise.all([
+    supabaseAdmin.from('rent_payments')
+      .select('*')
+      .eq('tenant_id', tenant.id)
+      .gte('due_date', `${monthStr}-01`)
+      .lte('due_date', `${monthStr}-31`)
+      .maybeSingle(),
+    supabaseAdmin.from('maintenance_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('unit_id', tenant.unit_id)
+      .neq('status', 'completed'),
+  ])
+
+  return NextResponse.json({
+    ...tenant,
+    _rentStatus: rentRes.data ?? null,
+    _openRequests: maintRes.count ?? 0,
+  })
 }
