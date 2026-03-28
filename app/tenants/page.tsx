@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Users, Phone, Mail, Calendar, Upload, Send, X, Trash2 } from 'lucide-react'
+import { Users, Phone, Mail, Calendar, Upload, Send, X, Trash2, UserPlus, CheckCircle } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import CsvImportModal from '@/components/CsvImportModal'
 
@@ -15,6 +15,20 @@ export default function TenantsPage() {
   const [emailForm, setEmailForm] = useState({ subject: '', body: '' })
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [inviting, setInviting] = useState<string | null>(null)
+  const [invited, setInvited] = useState<string[]>([])
+
+  async function sendPortalInvite(t: any) {
+    if (!t.email) return
+    setInviting(t.id)
+    await fetch('/api/portal/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenantId: t.id, email: t.email, name: t.name }),
+    })
+    setInviting(null)
+    setInvited(prev => [...prev, t.id])
+  }
 
   async function deleteTenant(t: any) {
     if (!confirm(`Remove ${t.name}?`)) return
@@ -190,6 +204,20 @@ export default function TenantsPage() {
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-all">
+                          {t.email && (
+                            <button
+                              onClick={() => sendPortalInvite(t)}
+                              disabled={inviting === t.id || invited.includes(t.id) || !!t.auth_user_id}
+                              className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 disabled:opacity-40"
+                              title={t.auth_user_id ? 'Already has portal access' : 'Invite to tenant portal'}
+                            >
+                              {invited.includes(t.id) || t.auth_user_id
+                                ? <><CheckCircle size={11} className="text-green-500" /> Portal</>
+                                : inviting === t.id
+                                ? '...'
+                                : <><UserPlus size={11} /> Invite</>}
+                            </button>
+                          )}
                           {t.email && daysLeft !== null && daysLeft <= 60 && (
                             <button
                               onClick={() => openRenewalEmail(t)}
