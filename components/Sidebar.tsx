@@ -45,7 +45,7 @@ function NavLinks({ path, onNav }: { path: string; onNav?: () => void }) {
           )
         })}
       </nav>
-      <div className="px-3 pb-4">
+      <div className="px-3 pb-4 space-y-2">
         <Link
           href="/assistant"
           onClick={onNav}
@@ -57,6 +57,16 @@ function NavLinks({ path, onNav }: { path: string; onNav?: () => void }) {
           Personal Assistant
           {path === '/assistant' && <ChevronRight size={14} className="ml-auto text-violet-400" />}
         </Link>
+        <a
+          href="/portal"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onNav}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+        >
+          <Users size={17} className="text-blue-500" />
+          Tenant Portal ↗
+        </a>
       </div>
     </>
   )
