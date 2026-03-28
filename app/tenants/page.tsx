@@ -137,10 +137,26 @@ export default function TenantsPage() {
                     <div className="flex items-center gap-2">
                       {t.email && (
                         <button
-                          onClick={() => { setComposeTo(t); setEmailForm({ subject: '', body: '' }) }}
-                          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700"
+                          onClick={() => sendPortalInvite(t)}
+                          disabled={inviting === t.id || invited.includes(t.id) || !!t.auth_user_id}
+                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-medium transition-colors ${
+                            invited.includes(t.id) || t.auth_user_id
+                              ? 'bg-green-50 text-green-600'
+                              : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                          } disabled:opacity-50`}
                         >
-                          <Mail size={12} /> Email
+                          {invited.includes(t.id) || t.auth_user_id
+                            ? <><CheckCircle size={11} /> Invited</>
+                            : inviting === t.id ? '...'
+                            : <><UserPlus size={11} /> Invite</>}
+                        </button>
+                      )}
+                      {t.email && (
+                        <button
+                          onClick={() => { setComposeTo(t); setEmailForm({ subject: '', body: '' }) }}
+                          className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600"
+                        >
+                          <Mail size={12} />
                         </button>
                       )}
                       <button onClick={() => deleteTenant(t)} className="text-gray-300 hover:text-red-500">
@@ -203,7 +219,7 @@ export default function TenantsPage() {
                         ) : <span className="text-xs text-gray-400">No end date</span>}
                       </td>
                       <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-all">
+                        <div className="flex items-center gap-3">
                           {t.email && (
                             <button
                               onClick={() => sendPortalInvite(t)}
