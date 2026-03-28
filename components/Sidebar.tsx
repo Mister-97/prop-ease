@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Building2, Wrench, Users, DollarSign,
-  HardHat, ChevronRight, Sparkles, FolderOpen, Menu, X, CircleDollarSign, MessageSquare
+  HardHat, ChevronRight, Sparkles, FolderOpen, Menu, X, CircleDollarSign, MessageSquare,
+  ClipboardList, BarChart3
 } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
@@ -18,6 +19,8 @@ const nav = [
   { href: '/vendors',     label: 'Vendors',      icon: HardHat },
   { href: '/documents',   label: 'Documents',    icon: FolderOpen },
   { href: '/messages',    label: 'Messages',     icon: MessageSquare },
+  { href: '/listings',    label: 'Listings',     icon: ClipboardList },
+  { href: '/reports',     label: 'Reports',      icon: BarChart3 },
 ]
 
 function NavLinks({ path, onNav }: { path: string; onNav?: () => void }) {

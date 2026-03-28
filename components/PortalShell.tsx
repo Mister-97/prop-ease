@@ -2,14 +2,16 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Home, Wrench, FileText, MessageSquare, LogOut } from 'lucide-react'
+import { Home, Wrench, FileText, MessageSquare, LogOut, DollarSign, ScrollText } from 'lucide-react'
 import Image from 'next/image'
 
 const nav = [
   { href: '/portal', label: 'Home', icon: Home },
-  { href: '/portal/maintenance', label: 'Maintenance', icon: Wrench },
-  { href: '/portal/documents', label: 'Documents', icon: FileText },
+  { href: '/portal/lease', label: 'Lease', icon: ScrollText },
+  { href: '/portal/payments', label: 'Payments', icon: DollarSign },
+  { href: '/portal/maintenance', label: 'Repairs', icon: Wrench },
   { href: '/portal/messages', label: 'Messages', icon: MessageSquare },
+  { href: '/portal/documents', label: 'Docs', icon: FileText },
 ]
 
 export default function PortalShell({ children, tenantName }: { children: React.ReactNode; tenantName: string }) {

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { DollarSign, CheckCircle, Circle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { DollarSign, CheckCircle, Circle, AlertCircle, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react'
 import { format, addMonths, subMonths, startOfMonth } from 'date-fns'
 
 export default function RentPage() {
@@ -10,6 +10,11 @@ export default function RentPage() {
   const [loading, setLoading] = useState(true)
   const [month, setMonth] = useState(startOfMonth(new Date()))
   const [saving, setSaving] = useState<string | null>(null)
+
+  // Late fee state: map of paymentId -> input value string
+  const [lateFeeInputs, setLateFeeInputs] = useState<Record<string, string>>({})
+  const [showLateFeeFor, setShowLateFeeFor] = useState<string | null>(null)
+  const [savingFee, setSavingFee] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
@@ -32,6 +37,18 @@ export default function RentPage() {
 
   function getPayment(tenantId: string) {
     return payments.find(p => p.tenant_id === tenantId)
+  }
+
+  // A payment is overdue if today is past the 5th of the current month AND it's unpaid
+  function isOverdue(tenantId: string): boolean {
+    const payment = getPayment(tenantId)
+    if (payment?.status === 'paid') return false
+    const now = new Date()
+    const currentMonth = startOfMonth(new Date())
+    // Only show overdue for current month (or past months)
+    if (month > currentMonth) return false
+    if (month < currentMonth) return true // past months always overdue if unpaid
+    return now.getDate() > 5
   }
 
   async function togglePaid(tenant: any) {
@@ -61,10 +78,27 @@ export default function RentPage() {
     load()
   }
 
+  async function saveLateFee(tenant: any) {
+    const existing = getPayment(tenant.id)
+    if (!existing) return
+    const feeStr = lateFeeInputs[tenant.id] ?? ''
+    const fee = parseFloat(feeStr) || 0
+    setSavingFee(tenant.id)
+    await supabase.from('rent_payments').update({ late_fee: fee }).eq('id', existing.id)
+    setSavingFee(null)
+    setShowLateFeeFor(null)
+    load()
+  }
+
+  const hasAnyLateFee = payments.some(p => Number(p.late_fee ?? 0) > 0)
+
   const paid = tenants.filter(t => getPayment(t.id)?.status === 'paid')
   const unpaid = tenants.filter(t => getPayment(t.id)?.status !== 'paid')
   const totalDue = tenants.reduce((s, t) => s + Number(t.units?.rent_amount ?? 0), 0)
-  const totalCollected = paid.reduce((s, t) => s + Number(t.units?.rent_amount ?? 0), 0)
+  const totalCollected = paid.reduce((s, t) => {
+    const p = getPayment(t.id)
+    return s + Number(t.units?.rent_amount ?? 0) + Number(p?.late_fee ?? 0)
+  }, 0)
 
   return (
     <div className="p-4 lg:p-8">
@@ -120,7 +154,26 @@ export default function RentPage() {
             <div className="mb-1">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Unpaid ({unpaid.length})</p>
               {unpaid.map(t => (
-                <TenantRow key={t.id} tenant={t} payment={getPayment(t.id)} saving={saving === t.id} onToggle={() => togglePaid(t)} />
+                <TenantRow
+                  key={t.id}
+                  tenant={t}
+                  payment={getPayment(t.id)}
+                  saving={saving === t.id}
+                  overdue={isOverdue(t.id)}
+                  hasAnyLateFee={hasAnyLateFee}
+                  showLateFee={showLateFeeFor === t.id}
+                  lateFeeInput={lateFeeInputs[t.id] ?? ''}
+                  savingFee={savingFee === t.id}
+                  onToggle={() => togglePaid(t)}
+                  onShowLateFee={() => {
+                    const p = getPayment(t.id)
+                    setLateFeeInputs(prev => ({ ...prev, [t.id]: String(p?.late_fee ?? '') }))
+                    setShowLateFeeFor(t.id)
+                  }}
+                  onLateFeeChange={val => setLateFeeInputs(prev => ({ ...prev, [t.id]: val }))}
+                  onSaveLateFee={() => saveLateFee(t)}
+                  onCancelLateFee={() => setShowLateFeeFor(null)}
+                />
               ))}
             </div>
           )}
@@ -128,7 +181,22 @@ export default function RentPage() {
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 mt-4">Paid ({paid.length})</p>
               {paid.map(t => (
-                <TenantRow key={t.id} tenant={t} payment={getPayment(t.id)} saving={saving === t.id} onToggle={() => togglePaid(t)} />
+                <TenantRow
+                  key={t.id}
+                  tenant={t}
+                  payment={getPayment(t.id)}
+                  saving={saving === t.id}
+                  overdue={false}
+                  hasAnyLateFee={hasAnyLateFee}
+                  showLateFee={false}
+                  lateFeeInput=""
+                  savingFee={false}
+                  onToggle={() => togglePaid(t)}
+                  onShowLateFee={() => {}}
+                  onLateFeeChange={() => {}}
+                  onSaveLateFee={() => {}}
+                  onCancelLateFee={() => {}}
+                />
               ))}
             </div>
           )}
@@ -138,45 +206,123 @@ export default function RentPage() {
   )
 }
 
-function TenantRow({ tenant, payment, saving, onToggle }: {
-  tenant: any; payment: any; saving: boolean; onToggle: () => void
+function TenantRow({
+  tenant, payment, saving, overdue, hasAnyLateFee,
+  showLateFee, lateFeeInput, savingFee,
+  onToggle, onShowLateFee, onLateFeeChange, onSaveLateFee, onCancelLateFee,
+}: {
+  tenant: any
+  payment: any
+  saving: boolean
+  overdue: boolean
+  hasAnyLateFee: boolean
+  showLateFee: boolean
+  lateFeeInput: string
+  savingFee: boolean
+  onToggle: () => void
+  onShowLateFee: () => void
+  onLateFeeChange: (v: string) => void
+  onSaveLateFee: () => void
+  onCancelLateFee: () => void
 }) {
   const isPaid = payment?.status === 'paid'
   const amount = Number(tenant.units?.rent_amount ?? 0)
+  const lateFee = Number(payment?.late_fee ?? 0)
+  const total = amount + lateFee
 
   return (
-    <div className={`flex items-center justify-between bg-white border rounded-xl px-4 py-3 mb-2 transition-colors ${isPaid ? 'border-green-200 bg-green-50/30' : 'border-gray-200'}`}>
-      <div className="flex items-center gap-3">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${isPaid ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-          {tenant.name.charAt(0).toUpperCase()}
+    <div className={`flex flex-col bg-white border rounded-xl px-4 py-3 mb-2 transition-colors ${
+      isPaid
+        ? 'border-green-200 bg-green-50/30'
+        : overdue
+        ? 'border-red-200 bg-red-50/40'
+        : 'border-gray-200'
+    }`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+            isPaid ? 'bg-green-100 text-green-700' : overdue ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'
+          }`}>
+            {tenant.name.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-gray-900">{tenant.name}</p>
+              {overdue && !isPaid && (
+                <span className="flex items-center gap-0.5 text-xs font-semibold text-red-600 bg-red-100 px-1.5 py-0.5 rounded-full">
+                  <AlertTriangle size={9} /> OVERDUE
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-400">
+              {tenant.units?.properties?.name} · Unit {tenant.units?.unit_number}
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-medium text-gray-900">{tenant.name}</p>
-          <p className="text-xs text-gray-400">
-            {tenant.units?.properties?.name} · Unit {tenant.units?.unit_number}
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="text-right">
-          <p className="text-sm font-semibold text-gray-900">${amount.toLocaleString()}</p>
-          {isPaid && payment?.paid_date && (
-            <p className="text-xs text-green-600">Paid {format(new Date(payment.paid_date), 'MMM d')}</p>
+        <div className="flex items-center gap-3 lg:gap-4">
+          <div className="text-right">
+            <p className="text-sm font-semibold text-gray-900">
+              ${total.toLocaleString()}
+              {lateFee > 0 && (
+                <span className="text-xs text-red-500 ml-1">(+${lateFee} fee)</span>
+              )}
+            </p>
+            {isPaid && payment?.paid_date && (
+              <p className="text-xs text-green-600">Paid {format(new Date(payment.paid_date), 'MMM d')}</p>
+            )}
+          </div>
+
+          {/* Add Late Fee button — only for overdue/unpaid */}
+          {!isPaid && overdue && !showLateFee && (
+            <button
+              onClick={onShowLateFee}
+              className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-2.5 py-1.5 rounded-lg font-medium transition-colors"
+            >
+              <AlertCircle size={11} /> Late Fee
+            </button>
           )}
+
+          <button
+            onClick={onToggle}
+            disabled={saving}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              isPaid
+                ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-700'
+            } disabled:opacity-50`}
+          >
+            {isPaid ? <CheckCircle size={13} /> : <Circle size={13} />}
+            {saving ? '...' : isPaid ? 'Paid' : 'Mark Paid'}
+          </button>
         </div>
-        <button
-          onClick={onToggle}
-          disabled={saving}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-            isPaid
-              ? 'bg-green-100 text-green-700 hover:bg-green-200'
-              : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-700'
-          } disabled:opacity-50`}
-        >
-          {isPaid ? <CheckCircle size={13} /> : <Circle size={13} />}
-          {saving ? '...' : isPaid ? 'Paid' : 'Mark Paid'}
-        </button>
       </div>
+
+      {/* Inline late fee input */}
+      {showLateFee && (
+        <div className="mt-3 flex items-center gap-2 pl-11">
+          <span className="text-xs text-gray-500 shrink-0">Late fee amount ($)</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={lateFeeInput}
+            onChange={e => onLateFeeChange(e.target.value)}
+            placeholder="e.g. 50"
+            className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-orange-400 w-28"
+            autoFocus
+          />
+          <button
+            onClick={onSaveLateFee}
+            disabled={savingFee}
+            className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors"
+          >
+            {savingFee ? '...' : 'Save'}
+          </button>
+          <button onClick={onCancelLateFee} className="text-xs text-gray-400 hover:text-gray-600 px-2">
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   )
 }

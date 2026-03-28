@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Building2, Users, Wrench, DollarSign, TrendingUp, CircleDollarSign } from 'lucide-react'
+import { Building2, Users, Wrench, DollarSign, TrendingUp, CircleDollarSign, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import { format, differenceInDays } from 'date-fns'
 
