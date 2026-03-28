@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Wrench, Plus, Filter } from 'lucide-react'
+import { Wrench, Plus, X } from 'lucide-react'
 import { format } from 'date-fns'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -18,17 +18,44 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 export default function MaintenancePage() {
   const [requests, setRequests] = useState<any[]>([])
+  const [properties, setProperties] = useState<any[]>([])
+  const [units, setUnits] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
+  const [showAdd, setShowAdd] = useState(false)
+  const [form, setForm] = useState({ title: '', description: '', priority: 'medium', property_id: '', unit_id: '' })
+  const [saving, setSaving] = useState(false)
 
   async function load() {
-    const { data } = await supabase
-      .from('maintenance_requests')
-      .select('*, properties(name), units(unit_number)')
-      .order('created_at', { ascending: false })
-    setRequests(data ?? [])
+    const [req, props, u] = await Promise.all([
+      supabase.from('maintenance_requests').select('*, properties(name), units(unit_number)').order('created_at', { ascending: false }),
+      supabase.from('properties').select('id, name'),
+      supabase.from('units').select('id, unit_number, property_id'),
+    ])
+    setRequests(req.data ?? [])
+    setProperties(props.data ?? [])
+    setUnits(u.data ?? [])
     setLoading(false)
   }
+
+  async function save() {
+    if (!form.title || !form.property_id) return
+    setSaving(true)
+    await supabase.from('maintenance_requests').insert({
+      title: form.title,
+      description: form.description || null,
+      priority: form.priority,
+      property_id: form.property_id,
+      unit_id: form.unit_id || null,
+      status: 'open',
+    })
+    setSaving(false)
+    setShowAdd(false)
+    setForm({ title: '', description: '', priority: 'medium', property_id: '', unit_id: '' })
+    load()
+  }
+
+  const filteredUnits = units.filter(u => u.property_id === form.property_id)
 
   useEffect(() => { load() }, [])
 
@@ -46,6 +73,12 @@ export default function MaintenancePage() {
           <h1 className="text-2xl font-bold text-gray-900">Maintenance</h1>
           <p className="text-gray-500 mt-1">{requests.filter(r => r.status !== 'completed').length} open requests</p>
         </div>
+        <button
+          onClick={() => setShowAdd(true)}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+        >
+          <Plus size={15} /> Add Request
+        </button>
       </div>
 
       {/* Filter tabs */}
@@ -150,6 +183,58 @@ export default function MaintenancePage() {
             </table>
           </div>
         </>
+      )}
+
+      {showAdd && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-semibold text-gray-900">Add Maintenance Request</h2>
+              <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Leaking faucet in kitchen" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Property</label>
+                <select value={form.property_id} onChange={e => setForm(f => ({ ...f, property_id: e.target.value, unit_id: '' }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select property...</option>
+                  {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              {filteredUnits.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit (optional)</label>
+                  <select value={form.unit_id} onChange={e => setForm(f => ({ ...f, unit_id: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">No specific unit</option>
+                    {filteredUnits.map(u => <option key={u.id} value={u.id}>Unit {u.unit_number}</option>)}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Additional details..." className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setShowAdd(false)} className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
+              <button onClick={save} disabled={saving || !form.title || !form.property_id} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50">
+                {saving ? 'Saving...' : 'Add Request'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

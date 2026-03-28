@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Building2, MapPin, Home, Plus, ChevronLeft, Users, Wrench, DollarSign, X, CheckCircle, Circle, Trash2 } from 'lucide-react'
+import { Building2, MapPin, Home, Plus, ChevronLeft, Users, Wrench, DollarSign, X, CheckCircle, Circle, Trash2, Pencil, Check } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { format, differenceInDays } from 'date-fns'
@@ -69,6 +69,14 @@ export default function PropertyDetailPage() {
   const [tenantForm, setTenantForm] = useState({ name: '', email: '', phone: '', lease_start: '', lease_end: '' })
   const [mForm, setMForm] = useState({ title: '', description: '', priority: 'medium', unit_id: '' })
   const [saving, setSaving] = useState(false)
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [notesValue, setNotesValue] = useState('')
+
+  async function saveNotes() {
+    await supabase.from('properties').update({ notes: notesValue }).eq('id', id)
+    setEditingNotes(false)
+    setProperty((p: any) => ({ ...p, notes: notesValue }))
+  }
 
   async function deleteProperty() {
     if (!confirm(`Delete "${property?.name}"? This will also delete all units, tenants, and maintenance records.`)) return
@@ -90,6 +98,7 @@ export default function PropertyDetailPage() {
       supabase.from('maintenance_requests').select('*, units(unit_number)').eq('property_id', id).order('created_at', { ascending: false }),
     ])
     setProperty(propRes.data)
+    setNotesValue(propRes.data?.notes ?? '')
     setUnits(unitsRes.data ?? [])
     setMaintenance(maintRes.data ?? [])
     setLoading(false)
@@ -224,6 +233,36 @@ export default function PropertyDetailPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Notes */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-5">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-semibold text-gray-700">Notes</p>
+          {!editingNotes ? (
+            <button onClick={() => setEditingNotes(true)} className="text-gray-400 hover:text-gray-600">
+              <Pencil size={14} />
+            </button>
+          ) : (
+            <button onClick={saveNotes} className="flex items-center gap-1 text-xs text-green-600 hover:text-green-700 font-medium">
+              <Check size={13} /> Save
+            </button>
+          )}
+        </div>
+        {editingNotes ? (
+          <textarea
+            value={notesValue}
+            onChange={e => setNotesValue(e.target.value)}
+            rows={3}
+            autoFocus
+            placeholder="Add notes about this property..."
+            className="w-full text-sm text-gray-700 outline-none resize-none placeholder-gray-300"
+          />
+        ) : (
+          <p className="text-sm text-gray-500 whitespace-pre-wrap">
+            {property.notes || <span className="text-gray-300 italic">No notes — click pencil to add</span>}
+          </p>
+        )}
       </div>
 
       {/* Tabs */}

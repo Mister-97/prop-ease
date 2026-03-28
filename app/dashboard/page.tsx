@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Building2, Users, Wrench, DollarSign, AlertTriangle, Calendar, TrendingUp } from 'lucide-react'
+import { Building2, Users, Wrench, DollarSign, TrendingUp, CircleDollarSign } from 'lucide-react'
 import Link from 'next/link'
 import { format, differenceInDays } from 'date-fns'
 
@@ -13,6 +13,7 @@ export default function DashboardPage() {
     openMaintenance: 0,
     urgentMaintenance: 0,
     totalExpensesMonth: 0,
+    monthlyRevenue: 0,
     expiringLeases: [] as any[],
     recentMaintenance: [] as any[],
   })
@@ -22,18 +23,21 @@ export default function DashboardPage() {
     async function load() {
       const [props, units, maintenance, expenses, leases] = await Promise.all([
         supabase.from('properties').select('id'),
-        supabase.from('units').select('id, is_occupied'),
+        supabase.from('units').select('id, is_occupied, rent_amount'),
         supabase.from('maintenance_requests').select('id, title, status, priority, created_at, properties(name)').neq('status', 'completed').order('created_at', { ascending: false }).limit(5),
         supabase.from('expenses').select('amount').gte('date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]),
         supabase.from('tenants').select('name, lease_end, units(unit_number, properties(name, id))').not('lease_end', 'is', null).lte('lease_end', new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]).order('lease_end'),
       ])
+      const allUnits = units.data ?? []
+      const occupiedUnits = allUnits.filter(u => u.is_occupied)
       setStats({
         totalProperties: props.data?.length ?? 0,
-        totalUnits: units.data?.length ?? 0,
-        occupiedUnits: units.data?.filter(u => u.is_occupied).length ?? 0,
+        totalUnits: allUnits.length,
+        occupiedUnits: occupiedUnits.length,
         openMaintenance: maintenance.data?.length ?? 0,
         urgentMaintenance: maintenance.data?.filter(m => m.priority === 'urgent').length ?? 0,
         totalExpensesMonth: expenses.data?.reduce((s, e) => s + Number(e.amount), 0) ?? 0,
+        monthlyRevenue: occupiedUnits.reduce((s, u) => s + Number((u as any).rent_amount ?? 0), 0),
         expiringLeases: leases.data ?? [],
         recentMaintenance: maintenance.data ?? [],
       })
@@ -42,9 +46,10 @@ export default function DashboardPage() {
     load()
   }, [])
 
+  const occupancyRate = stats.totalUnits > 0 ? Math.round((stats.occupiedUnits / stats.totalUnits) * 100) : 0
   const statCards = [
-    { label: 'Properties', value: stats.totalProperties, icon: Building2, color: 'blue', href: '/properties' },
-    { label: 'Occupied Units', value: `${stats.occupiedUnits}/${stats.totalUnits}`, icon: Users, color: 'green', href: '/properties' },
+    { label: 'Monthly Revenue', value: `$${stats.monthlyRevenue.toLocaleString()}`, icon: CircleDollarSign, color: 'green', href: '/rent' },
+    { label: 'Occupancy', value: `${occupancyRate}%`, icon: TrendingUp, color: 'blue', href: '/properties' },
     { label: 'Open Requests', value: stats.openMaintenance, icon: Wrench, color: stats.urgentMaintenance > 0 ? 'red' : 'orange', href: '/maintenance' },
     { label: 'Expenses (MTD)', value: `$${stats.totalExpensesMonth.toLocaleString()}`, icon: DollarSign, color: 'purple', href: '/expenses' },
   ]

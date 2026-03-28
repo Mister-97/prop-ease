@@ -37,6 +37,16 @@ export default function TenantsPage() {
 
   useEffect(() => { load() }, [])
 
+  function openRenewalEmail(t: any) {
+    const days = t.lease_end ? differenceInDays(new Date(t.lease_end), new Date()) : null
+    const endDate = t.lease_end ? format(new Date(t.lease_end), 'MMMM d, yyyy') : ''
+    setComposeTo(t)
+    setEmailForm({
+      subject: `Lease Renewal — ${t.units?.properties?.name} Unit ${t.units?.unit_number}`,
+      body: `Hi ${t.name},\n\nI hope you're doing well. I wanted to reach out because your current lease is set to expire on ${endDate}${days !== null ? ` (${days} days from now)` : ''}.\n\nI'd love to have you continue as a tenant. Please let me know if you're interested in renewing, and we can discuss the details.\n\nFeel free to reply to this email or give me a call.\n\nBest regards`,
+    })
+  }
+
   async function sendEmail() {
     if (!composeTo?.email || !emailForm.subject || !emailForm.body) return
     setSending(true)
@@ -180,6 +190,14 @@ export default function TenantsPage() {
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-all">
+                          {t.email && daysLeft !== null && daysLeft <= 60 && (
+                            <button
+                              onClick={() => openRenewalEmail(t)}
+                              className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 font-medium"
+                            >
+                              <Send size={11} /> Renew
+                            </button>
+                          )}
                           {t.email && (
                             <button
                               onClick={() => { setComposeTo(t); setEmailForm({ subject: '', body: '' }) }}

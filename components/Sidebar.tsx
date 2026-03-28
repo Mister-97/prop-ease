@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Building2, Wrench, Users, DollarSign,
-  HardHat, ChevronRight, Sparkles, FolderOpen, Menu, X
+  HardHat, ChevronRight, Sparkles, FolderOpen, Menu, X, CircleDollarSign
 } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
@@ -11,6 +11,7 @@ import { useState } from 'react'
 const nav = [
   { href: '/dashboard',   label: 'Dashboard',    icon: LayoutDashboard },
   { href: '/properties',  label: 'Properties',   icon: Building2 },
+  { href: '/rent',        label: 'Rent',         icon: CircleDollarSign },
   { href: '/maintenance', label: 'Maintenance',  icon: Wrench },
   { href: '/tenants',     label: 'Tenants',      icon: Users },
   { href: '/expenses',    label: 'Expenses',     icon: DollarSign },
